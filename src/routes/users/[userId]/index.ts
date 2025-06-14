@@ -1,18 +1,9 @@
 import { Request } from 'express';
 
-const users = [
-  {
-    id: '5',
-    name: 'Patryk'
-  },
-  {
-    id: '6',
-    name: 'John'
-  }
-];
+import { USERS } from '../../../utils/constants';
 
 export const GET = (req: Request) => {
-  const { userId } = req.query;
+  const { userId } = req.params;
 
-  return users.find((e) => e.id === userId);
+  return USERS.find((e) => e.id === userId);
 };

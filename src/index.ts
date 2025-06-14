@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, read } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -16,7 +16,6 @@ app.use(express.json());
 
 const isResourceExists = (reqUrl: string) => {
   const resourcePath = path.join(__dirname, RESOURCES_DIR, reqUrl);
-
   return existsSync(path.join(resourcePath));
 };
 
@@ -25,6 +24,14 @@ app.all('/*', async (req: Request, res: Response) => {
     const reqMethod = req.method;
 
     if (isResourceExists(req.url)) {
+      if (req.url === '/') {
+        const rootDirFiles = await readdir(path.join(__dirname, RESOURCES_DIR));
+        if (!rootDirFiles.includes('index.ts')) {
+          res.status(404).send(`Resource not found`);
+          return;
+        }
+      }
+
       const module = await import(
         `file://${path.join(__dirname, RESOURCES_DIR, req.url)}`
       );

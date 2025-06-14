@@ -1,17 +1,15 @@
-import { Request, Response } from 'express';
-
-export const GET = async (req: Request, res: Response) => {
+export const GET = async () => {
   return 'Get users';
 };
 
-export const POST = async (req: Request, res: Response) => {
+export const POST = async () => {
   return 'Post user';
 };
 
-export const PATCH = async (req: Request, res: Response) => {
+export const PATCH = async () => {
   return 'Patch user';
 };
 
-export const DELETE = async (req: Request, res: Response) => {
+export const DELETE = async () => {
   return 'Delete user';
 };
