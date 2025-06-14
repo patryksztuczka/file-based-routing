@@ -8,8 +8,8 @@
     "start": "npx bun run ./src/index.ts",
     "dev": "tsx watch src/index.ts",
     "lint": "eslint src/**/*.ts",
-    "ts-lint": "tsc --noEmit",
-    "lint:fix": "eslint src/**/*.ts --fix"
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
