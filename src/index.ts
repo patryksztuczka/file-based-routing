@@ -1,78 +1,85 @@
 import { existsSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
+import path from 'node:path';
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 
-import { ROOT_DIR } from './utils/constants';
-import {
-  DETECT_SQUARE_BRACKETS_REGEX,
-  DYNAMIC_ROUTE_REGEX
-} from './utils/regex';
+import { PORT, RESOURCES_DIR } from './utils/constants';
+import { DYNAMIC_ROUTE_REGEX } from './utils/regex';
 
 const app = express();
 
-const PORT = 3000;
-
 app.use(cors());
+
 app.use(express.json());
 
-const handleRoute = async (filePath: string, req: Request, res: Response) => {
+const isResourceExists = (reqUrl: string) => {
+  const resourcePath = path.join(__dirname, RESOURCES_DIR, reqUrl);
+
+  return existsSync(path.join(resourcePath));
+};
+
+app.all('/*', async (req: Request, res: Response) => {
   try {
-    const module = await import(`file://${filePath}`);
+    const reqMethod = req.method;
 
-    const httpMethod = req.method;
+    if (isResourceExists(req.url)) {
+      const module = await import(
+        `file://${path.join(__dirname, RESOURCES_DIR, req.url)}`
+      );
 
-    let data = null;
+      const handler = module[reqMethod];
 
-    if (module) {
-      if (module[httpMethod]) {
-        data = await module[httpMethod](req, res);
-      } else {
-        res.status(404).send('Metohd not supported');
+      if (!handler) {
+        res.status(404).send(`${reqMethod} method is not supported`);
+        return;
       }
+      res.status(200).send(await handler());
     } else {
-      res.status(404).send('Route not found');
-    }
+      const reqUrlSegments = req.url.split('/').filter(Boolean);
+      let existingPath: string = '';
+      for (const segment of reqUrlSegments) {
+        const currentPath = existingPath + `/${segment}`;
+        if (isResourceExists(currentPath)) {
+          existingPath += `/${segment}`;
+        } else {
+          const dirFiles = await readdir(
+            path.join(__dirname, RESOURCES_DIR, existingPath)
+          );
 
-    return data;
+          const dynamicRoute = dirFiles.find((file) =>
+            file.match(DYNAMIC_ROUTE_REGEX)
+          );
+
+          if (!dynamicRoute) {
+            res.status(404).send(`Resource not found`);
+            return;
+          }
+
+          req.params[dynamicRoute.replaceAll('[', '').replaceAll(']', '')] =
+            segment;
+
+          existingPath += `/${dynamicRoute}`;
+        }
+      }
+
+      const module = await import(
+        `file://${path.join(__dirname, RESOURCES_DIR, existingPath)}`
+      );
+
+      const handler = module[reqMethod];
+
+      if (!handler) {
+        res.status(404).send(`${reqMethod} method is not supported`);
+        return;
+      }
+
+      res.status(200).send(await handler(req));
+    }
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal server error');
-  }
-};
-
-app.all('/*', async (req, res) => {
-  let filePath = `${__dirname}/${ROOT_DIR}${req.url}`;
-
-  const isFileExist = existsSync(filePath);
-  console.log(filePath);
-
-  if (isFileExist) {
-    const result = await handleRoute(`${filePath}/index.ts`, req, res);
-    res.send(result);
-  } else {
-    const requestPath = req.url.split('/').filter(Boolean);
-
-    const dirFiles = await readdir(
-      `${__dirname}/${ROOT_DIR}/${requestPath.at(-2)}`
-    );
-
-    const dynamicRoute = dirFiles.find((file) =>
-      file.match(DYNAMIC_ROUTE_REGEX)
-    );
-
-    if (dynamicRoute) {
-      filePath = `${__dirname}/${ROOT_DIR}/${requestPath.join('/').replace(requestPath.at(-1), dynamicRoute)}`;
-
-      req.params[dynamicRoute.replace(DETECT_SQUARE_BRACKETS_REGEX, '')] =
-        requestPath.at(-1);
-
-      const result = await handleRoute(`${filePath}/index.ts`, req, res);
-      res.send(result);
-    }
-
-    res.status(404).send('Route not found');
   }
 });
 
