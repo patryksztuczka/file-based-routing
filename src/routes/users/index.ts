@@ -1,15 +1,13 @@
-export const GET = async () => {
-  return 'Get users';
+import { Request, Response } from 'express';
+
+export const GET = async (req: Request, res: Response) => {
+  return res.status(200).send('Get users');
 };
 
-export const POST = async () => {
-  return 'Post user';
+export const POST = async (req: Request, res: Response) => {
+  return res.status(200).send('Post user');
 };
 
-export const PATCH = async () => {
-  return 'Patch user';
-};
-
-export const DELETE = async () => {
-  return 'Delete user';
+export const DELETE = async (req: Request, res: Response) => {
+  return res.status(200).send('Delete user');
 };

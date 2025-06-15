@@ -1,9 +1,16 @@
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
 import { USERS } from '../../../utils/constants';
 
-export const GET = (req: Request) => {
+export const GET = (req: Request, res: Response) => {
   const { userId } = req.params;
 
-  return USERS.find((e) => e.id === userId);
+  const user = USERS.find((e) => e.id === userId);
+
+  if (!user) {
+    res.status(404).send('User not found');
+    return;
+  }
+
+  return res.status(200).json(user);
 };

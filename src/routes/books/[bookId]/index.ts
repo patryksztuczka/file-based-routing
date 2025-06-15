@@ -1,5 +1,5 @@
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
-export const GET = async (req: Request) => {
-  return 'Get book of id: ' + req.params.bookId;
+export const GET = async (req: Request, res: Response) => {
+  return res.status(200).send('Get book of id: ' + req.params.bookId);
 };
